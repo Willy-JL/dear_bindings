@@ -7,6 +7,7 @@ class DOMFieldDeclaration(code_dom.element.DOMElement):
     def __init__(self):
         super().__init__()
         self.field_type = None
+        self.original_names = []
         self.names = []
         self.is_static = False
         self.is_extern = False
@@ -52,6 +53,7 @@ class DOMFieldDeclaration(code_dom.element.DOMElement):
 
         if isinstance(dom_element.field_type, code_dom.functionpointertype.DOMFunctionPointerType):
             # Function pointers contain their own name
+            dom_element.original_names.append(dom_element.field_type.name)
             dom_element.names.append(dom_element.field_type.name)
             dom_element.is_array.append(False)
             dom_element.array_bounds_tokens.append(None)
@@ -68,6 +70,7 @@ class DOMFieldDeclaration(code_dom.element.DOMElement):
                     return None
 
                 dom_element.tokens.append(name_token)
+                dom_element.original_names.append(name_token.value)
                 dom_element.names.append(name_token.value)
 
                 # Check for an array specifier

@@ -5,20 +5,26 @@ from src.code_dom.common import write_c_line, WriteContext
 
 
 # Recursively generate code to copy all the members of a struct and any contained by-valuestructs
-def generate_field_copies(file, indent, known_by_value_structs, struct, prefix):
+def generate_field_copies(file, indent, known_by_value_structs, struct, to_cpp, l_prefix, r_prefix):
     # Emit code to copy each member
     for field in struct.list_directly_contained_children_of_type(code_dom.DOMFieldDeclaration):
         if field.field_type.to_c_string() in known_by_value_structs:
             # This is a by-value struct type, so recurse to copy members of it
-            for name in field.names:
+            for l_name, r_name in zip(field.original_names, field.names):
+                if not to_cpp:
+                    l_name, r_name = r_name, l_name
                 generate_field_copies(file,
                                       indent,
                                       known_by_value_structs,
                                       known_by_value_structs[field.field_type.to_c_string()],
-                                      prefix + name + ".")
+                                      to_cpp,
+                                      l_prefix + l_name + ".",
+                                      r_prefix + r_name + ".")
         else:
-            for name in field.names:
-                write_c_line(file, indent, WriteContext(), "dest." + prefix + name + " = src." + prefix + name + ";")
+            for l_name, r_name in zip(field.original_names, field.names):
+                if not to_cpp:
+                    l_name, r_name = r_name, l_name
+                write_c_line(file, indent, WriteContext(), "dest." + l_prefix + l_name + " = src." + r_prefix + r_name + ";")
 
 
 # Generate code to convert by-value types to/from their CPP version
@@ -55,7 +61,7 @@ def generate(dom_root, file, indent=0):
                 write_c_line(file, indent, write_context, dest_type + " dest;")
 
                 # Emit code to copy each member
-                generate_field_copies(file, indent, known_by_value_structs, struct, "")
+                generate_field_copies(file, indent, known_by_value_structs, struct, to_cpp, "", "")
 
                 write_c_line(file, indent, write_context, "return dest;")
                 indent -= 1
