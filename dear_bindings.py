@@ -182,10 +182,10 @@ def convert_header(
                                           "ImGui::SliderBehaviorT",
                                           "ImGui::RoundScalarWithFormatT",
                                           "ImGui::CheckboxFlagsT"])
-    
+
     mod_remove_functions.apply(dom_root, ["ImGui::GetInputTextState",
                                           "ImGui::DebugNodeInputTextState"])
-    
+
 
     mod_add_prefix_to_loose_functions.apply(dom_root, "c")
 
@@ -343,7 +343,7 @@ def convert_header(
                                      ],
                                      type_priorities={
                                      })
-    
+
     if not no_generate_default_arg_functions:
         mod_generate_default_argument_functions.apply(dom_root,
                                                       # We ignore functions that don't get called often because in those
@@ -474,7 +474,7 @@ def convert_header(
                                                 'ImGui_Text',
                                                 'ImGuiTextBuffer_appendf'
                                             ])
-        
+
     if is_imgui_internal:
         mod_move_elements.apply(dom_root,
                                 main_src_root,
@@ -734,7 +734,7 @@ if __name__ == '__main__':
     parser.add_argument('--replace-prefix',
                         help="Specify a name prefix and something to replace it with as a pair of arguments of "
                              "the form <old prefix>=<new prefix>. For example, \"--replace-prefix ImFont_=if will\" "
-                             "result in ImFont_FindGlyph() becoming ifFontGlyph() (and all other ImFont_ names "
+                             "result in ImFont_FindGlyph() becoming ifFindGlyph() (and all other ImFont_ names "
                              "following suit)",
                         default=[],
                         action='append')
