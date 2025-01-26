@@ -94,7 +94,8 @@ def convert_header(
         imgui_include_dir,
         backend_include_dir,
         emit_combined_json_metadata,
-        prefix_replacements
+        prefix_replacements,
+        casing_styles
     ):
 
     # Set up context and DOM root
@@ -588,6 +589,17 @@ def convert_header(
     if len(prefix_replacements) > 0:
         mod_rename_prefix.apply(dom_root, prefix_replacements)
 
+    casing_dom_types = {
+        "types": [code_dom.DOMClassStructUnion],
+        "fields": [code_dom.DOMFieldDeclaration],
+        "enums": [code_dom.DOMEnum],
+        "functions": [code_dom.DOMFunctionDeclaration, code_dom.DOMFunctionArgument],
+        "macros": [code_dom.DOMDefine],
+    }
+    for casing_element_type, dom_element_types in casing_dom_types.items():
+        if casing_element_type in casing_styles:
+            mod_change_casing.apply(dom_root, dom_element_types, casing_styles[casing_element_type])
+
     dom_root.validate_hierarchy()
 
     # Test code
@@ -726,6 +738,14 @@ if __name__ == '__main__':
                              "following suit)",
                         default=[],
                         action='append')
+    parser.add_argument('--case-style',
+                        help="Specify a casing style to apply to elements of a certain type as a pair of arguments of "
+                             "the form <element>=<casing>. For example, \"--case-style functions=snake_case will\" "
+                             "result in ImFont_FindGlyph() becoming imfont_find_glyph() "
+                             "(elements: types, fields, enums, functions, macros) "
+                             "(casings: snake_case, SHOUT_CASE, PascalCase, camelCase)",
+                        default=[],
+                        action='append')
 
     if len(sys.argv) == 1:
         parser.print_help(sys.stderr)
@@ -763,6 +783,32 @@ if __name__ == '__main__':
     if args.custom_namespace_prefix is not None:
         prefix_replacements["ImGui_"] = args.custom_namespace_prefix
 
+    # Make sure casing types are valid
+    casing_element_types = [
+        "types",
+        "fields",
+        "enums",
+        "functions",
+        "macros",
+    ]
+    casing_styles = {}
+    for casing_style in args.case_style:
+        if '=' not in casing_style:
+            print("--case-style \"" + casing_style + "\" is not of the form <element>=<casing>")
+            sys.exit(1)
+        index = casing_style.index('=')
+        element_type = casing_style[:index]
+        casing_type = casing_style[(index+1):]
+        if element_type not in casing_element_types:
+            print(f'--case-style got invalid element "{element_type}" '
+                  f'(supported: {", ".join(casing_element_types)})')
+            sys.exit(1)
+        if casing_type not in mod_change_casing.casing_types:
+            print(f'--case-style got invalid casing "{casing_type}" '
+                  f'(supported: {", ".join(mod_change_casing.casing_types)})')
+            sys.exit(1)
+        casing_styles[element_type] = casing_type
+
     # Add any user-supplied config file as well
     for include in args.include:
         include_files.append(os.path.realpath(include))
@@ -781,7 +827,8 @@ if __name__ == '__main__':
             args.imgui_include_dir,
             args.backend_include_dir if args.backend_include_dir is not None else args.imgui_include_dir,
             args.emit_combined_json_metadata,
-            prefix_replacements
+            prefix_replacements,
+            casing_styles
         )
     except:  # noqa - suppress warning about broad exception clause as it's intentionally broad
         print("Exception during conversion:")
