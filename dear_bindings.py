@@ -589,16 +589,8 @@ def convert_header(
     if len(prefix_replacements) > 0:
         mod_rename_prefix.apply(dom_root, prefix_replacements)
 
-    casing_dom_types = {
-        "types": [code_dom.DOMClassStructUnion],
-        "fields": [code_dom.DOMFieldDeclaration],
-        "enums": [code_dom.DOMEnum],
-        "functions": [code_dom.DOMFunctionDeclaration, code_dom.DOMFunctionArgument],
-        "macros": [code_dom.DOMDefine],
-    }
-    for casing_element_type, dom_element_types in casing_dom_types.items():
-        if casing_element_type in casing_styles:
-            mod_change_casing.apply(dom_root, dom_element_types, casing_styles[casing_element_type])
+    if casing_styles:
+        mod_change_casing.apply(dom_root, casing_styles)
 
     dom_root.validate_hierarchy()
 

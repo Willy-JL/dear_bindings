@@ -1,3 +1,4 @@
+from src import code_dom
 import re
 
 casing_types = [
@@ -9,17 +10,37 @@ casing_types = [
 
 
 # This modifier renames all DOM elements of a certain type following the given casing type
-def apply(dom_root, element_types, casing_type):
-    for element_type in element_types:
-        for element in dom_root.list_all_children_of_type(element_type):
-            if hasattr(element, 'name') and element.name is not None:
-                element.name = change_casing(element.name, casing_type)
-            if hasattr(element, 'names'):
-                for i, name in enumerate(element.names):
-                    element.names[i] = change_casing(name, casing_type)
+def apply(dom_root, casing_styles):
+    if "types" in casing_styles:
+        for element in dom_root.list_all_children_of_type(code_dom.DOMClassStructUnion):
+            element.name = change_casing(element.name, casing_styles["types"])
+        for element in dom_root.list_all_children_of_type(code_dom.DOMTypedef):
+            element.name = change_casing(element.name, casing_styles["types"])
+        for element in dom_root.list_all_children_of_type(code_dom.DOMType):
+            for token in element.tokens:
+                if token.type == "THING" and token.value not in ("int", "char", "bool", "void", "float", "double", "short", "size_t", "va_list", "long"):
+                    token.value = change_casing(token.value, casing_styles["types"])
+    if "fields" in casing_styles:
+        for element in dom_root.list_all_children_of_type(code_dom.DOMFieldDeclaration):
+            for i, name in enumerate(element.names):
+                element.names[i] = change_casing(name, casing_styles["fields"])
+    if "enums" in casing_styles:
+        for element in dom_root.list_all_children_of_type(code_dom.DOMEnum):
+            element.name = change_casing(element.name, casing_styles["enums"])
+    if "functions" in casing_styles:
+        for element in dom_root.list_all_children_of_type(code_dom.DOMFunctionDeclaration):
+            element.name = change_casing(element.name, casing_styles["functions"])
+        for element in dom_root.list_all_children_of_type(code_dom.DOMFunctionArgument):
+            element.name = change_casing(element.name, casing_styles["functions"])
+    if "macros" in casing_styles:
+        for element in dom_root.list_all_children_of_type(code_dom.DOMDefine):
+            element.name = change_casing(element.name, casing_styles["macros"])
 
 
 def change_casing(element_name, casing_type):
+    if not element_name:
+        return element_name
+
     # Put an underscore between changes from lowercase to uppercase
     underscore_words = re.sub(r"([a-z])([A-Z])", r"\1_\2", element_name)
 
@@ -46,7 +67,8 @@ def change_casing(element_name, casing_type):
     elif casing_type == "PascalCase":
         # Don't replace ImGuiWhatever with ImguiWhatever
         # Match all words and make them lowercase with first one capitalized
-        pascal_case = re.sub(r"([A-z]+?)(_|$)", lambda m: m[1].title(), underscore_words)
+        pascal_case = re.sub(r"([A-z]+?)(_|$)", lambda m: m[1].title() + m[2], underscore_words)
+        pascal_case = re.sub(r"_(.)", r"\1", pascal_case)
         return pascal_case
 
     elif casing_type == "camelCase":
