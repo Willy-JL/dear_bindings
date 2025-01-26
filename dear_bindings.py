@@ -626,6 +626,12 @@ def convert_header(
                   "%BACKEND_INCLUDE_DIR%": backend_include_dir,
                   "%OUTPUT_HEADER_NAME%": dest_file_name_only + ".h",
                   "%OUTPUT_HEADER_NAME_NO_INTERNAL%": dest_file_name_only_no_internal + ".h"}
+    for override_type, override_name in [
+        ("functions", "ImVector_Construct"),
+        ("functions", "ImVector_Destruct"),
+    ]:
+        if override_type in casing_styles:
+            expansions[override_name] = mod_change_casing.change_casing(override_name, casing_styles[override_type])
 
     with open(dest_file_no_ext + ".h", "w") as file:
         insert_header_templates(file, template_dir, src_file_name_only, ".h", expansions)
